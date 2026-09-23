@@ -4,29 +4,38 @@ name: Pipeline
 # builds the page into an image and checks it renders. Nothing is deployed yet.
 # LAB.md tells you what to add next.
 
+# The event that started this workflow is either a pull request to main, a push to main, or a manual trigger.
+
 on:
   pull_request:
     branches: [main]
   push:
     branches: [main]
   workflow_dispatch:
+# End of workflow triggers section
 
+# Permissions section - this defines the minimum permissions the workflow needs to run which gives the content read only access
 permissions:
   contents: read
 
+# Environment variables section - this defines environment variables that will be available to all jobs and steps in the workflow
 env:
   IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT }}/${{ vars.AR_REPO }}/frontend
+# End of environment variables section
 
+# Jobs section - this defines the jobs that will run as part of the workflow
 jobs:
+  # Test job - this job builds the page into an image and runs a smoke test
   test:
     name: Build and smoke test
     runs-on: ubuntu-latest
     timeout-minutes: 10
+# Steps section - this defines the steps that will be executed as part of the test job
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          persist-credentials: false
-
+          persist-credentials: false 
+# Step to stamp the page with metadata
       - name: Stamp the page
         env:
           TEAM: ${{ vars.TEAM }}
@@ -34,10 +43,11 @@ jobs:
           ACTOR: ${{ github.actor }}
           DEPLOY_ENV: ci
         run: python3 scripts/stamp.py
-
+# Step to build the Docker image
       - name: Build the image
         run: docker build -t frontend:test app
 
+# Step to run the Docker image and check it answers
       - name: Run it and check it answers
         run: |
           docker run -d --name web -p 8080:8080 frontend:test
